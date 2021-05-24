@@ -1,0 +1,91 @@
+const fs = require('fs');
+const readline = require('readline');
+
+module.exports = class Mjedit {
+    constructor(filename, data) {
+        this.metadata = new Metadata(filename, data);
+    }
+
+    async run() {
+        this.metadata.load();
+        await asyncReadlineUse(this.processQuestions.bind(this));
+        this.metadata.save();
+    }
+
+    async processQuestions(rl) {
+        const asyncQuestion = function(text) {
+            return new Promise((resolve, reject) => {
+                rl.question(text, answer => {
+                    if (answer)
+                        resolve(answer);
+                    else
+                        reject(answer);
+                });
+            });
+        }
+
+        async function questionHandler(key, text, validateCb, parseCb = (answer) => answer) {
+            let answer;
+
+            do {
+                answer = parseCb(await asyncQuestion(text + ': '));
+            } while (!validateCb(answer));
+
+            return answer;
+        }
+
+        await this.metadata.askQuestions(questionHandler);
+    }
+}
+
+async function asyncReadlineUse(asyncCb) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    await asyncCb(rl);
+
+    rl.close();
+}
+
+class Metadata {
+    constructor(filename, data) {
+        this.filename = filename.split('.')[0] + '.json';
+        this.data = data;
+        this.keys = Object.keys(this.data);
+    }
+
+    set(key, value, alreadyValidated = false) {
+        if (alreadyValidated || this.data[key].validator(value))
+            this.data[key].value = value;
+    }
+    setAll(data) {
+        this.keys.forEach((key) => this.set(key, data[key]));
+    }
+
+    load() {
+        try {
+            const oldMetadata = JSON.parse(fs.readFileSync('./' + this.filename, 'utf8'));
+            this.setAll(oldMetadata);
+        } catch (err) {
+            console.log('No existing metadata file found for ' + metadataFilename);
+        }
+    }
+    async askQuestions(questionHandler) {
+        for (const key of this.keys) {
+            const item = this.data[key];
+            await questionHandler(key, item.text, item.validator, item.parser)
+                .then((result) => this.set(key, result, true))
+                .catch((err) => {});
+        }
+    }
+    format() {
+        let formatedMetadata = {};
+        this.keys.forEach((key) => formatedMetadata[key] = this.data[key].value);
+        return formatedMetadata;
+    }
+    save() {
+        fs.writeFileSync(this.filename, JSON.stringify(this.format()));
+    }
+}
