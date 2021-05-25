@@ -8,8 +8,8 @@ module.exports = class Mjedit {
 
     async run() {
         this.metadata.load();
-        await asyncReadlineUse(async (rl) => {
-            await this.metadata.askQuestions(questionHandler.bind(rl));
+        await asyncReadlineUse(async ({ asyncQuestion }) => {
+            await this.metadata.askQuestions(questionHandler.bind(asyncQuestion));
         });
         this.metadata.save();
     }
@@ -21,27 +21,27 @@ async function asyncReadlineUse(asyncCb) {
         output: process.stdout
     });
 
-    await asyncCb(rl);
+    function asyncQuestion(text) {
+        return new Promise((resolve, reject) => {
+            rl.question(text, answer => {
+                if (answer)
+                    resolve(answer);
+                else
+                    reject(answer);
+            });
+        });
+    }
+
+    await asyncCb({rl, asyncQuestion});
 
     rl.close();
-}
-
-function asyncQuestion(text) {
-    return new Promise((resolve, reject) => {
-        this.question(text, answer => {
-            if (answer)
-                resolve(answer);
-            else
-                reject(answer);
-        });
-    });
 }
 
 async function questionHandler(key, text, validateCb, parseCb = (answer) => answer) {
     let answer;
 
     do {
-        answer = parseCb(await asyncQuestion.bind(this)(text + ': '));
+        answer = parseCb(await this(text + ': '));
     } while (!validateCb(answer));
 
     return answer;
