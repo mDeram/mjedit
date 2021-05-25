@@ -1,6 +1,6 @@
 {
   "name": "mjedit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "cli mini json editor",
   "main": "mjedit.js",
   "scripts": {
@@ -16,7 +16,7 @@
   "author": "Deramecourt Mathurin",
   "license": "ISC",
   "repository": {
-      "type": "git",
-      "url": "https://github.com/mDeram/mjedit.git"
+    "type": "git",
+    "url": "https://github.com/mDeram/mjedit.git"
   }
 }
