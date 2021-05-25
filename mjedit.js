@@ -8,33 +8,10 @@ module.exports = class Mjedit {
 
     async run() {
         this.metadata.load();
-        await asyncReadlineUse(this.processQuestions.bind(this));
+        await asyncReadlineUse(async (rl) => {
+            await this.metadata.askQuestions(questionHandler.bind(rl));
+        });
         this.metadata.save();
-    }
-
-    async processQuestions(rl) {
-        const asyncQuestion = function(text) {
-            return new Promise((resolve, reject) => {
-                rl.question(text, answer => {
-                    if (answer)
-                        resolve(answer);
-                    else
-                        reject(answer);
-                });
-            });
-        }
-
-        async function questionHandler(key, text, validateCb, parseCb = (answer) => answer) {
-            let answer;
-
-            do {
-                answer = parseCb(await asyncQuestion(text + ': '));
-            } while (!validateCb(answer));
-
-            return answer;
-        }
-
-        await this.metadata.askQuestions(questionHandler);
     }
 }
 
@@ -47,6 +24,27 @@ async function asyncReadlineUse(asyncCb) {
     await asyncCb(rl);
 
     rl.close();
+}
+
+function asyncQuestion(text) {
+    return new Promise((resolve, reject) => {
+        this.question(text, answer => {
+            if (answer)
+                resolve(answer);
+            else
+                reject(answer);
+        });
+    });
+}
+
+async function questionHandler(key, text, validateCb, parseCb = (answer) => answer) {
+    let answer;
+
+    do {
+        answer = parseCb(await asyncQuestion.bind(this)(text + ': '));
+    } while (!validateCb(answer));
+
+    return answer;
 }
 
 class Metadata {
