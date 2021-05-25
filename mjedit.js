@@ -67,7 +67,7 @@ class Metadata {
             const oldMetadata = JSON.parse(fs.readFileSync('./' + this.filename, 'utf8'));
             this.setAll(oldMetadata);
         } catch (err) {
-            console.log('No existing metadata file found for ' + metadataFilename);
+            console.log('No existing metadata file found for ' + this.filename);
         }
     }
     async askQuestions(questionHandler) {
