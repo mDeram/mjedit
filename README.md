@@ -9,6 +9,7 @@ const mjedit = new Mjedit(
             value: false,
             text: 'Are ids valid? (true/false)',
             validator: (value) => ['true', 'false'].includes(value),
+            required: true
         },
         ids: {
             value: [],
@@ -31,6 +32,7 @@ Enter ids (csv): 1234567890, 1234554321
 $ cat hello_mjedit.json
 {"idValid":"true","ids":["1234567890","1234554321"]}
 $ node app.js
+Are ids valid? (true/false):            # empty input does't skip required item
 Are ids valid? (true/false): 
 Enter ids (csv): 1111111111
 $ cat hello_mjedit.json

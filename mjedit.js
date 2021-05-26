@@ -32,7 +32,7 @@ async function asyncReadlineQuestionHandler(asyncCb) {
         });
     }
 
-    async function questionHandler(key, text, validateCb, parseCb = (answer) => answer) {
+    async function questionHandler(text, validateCb, parseCb = (answer) => answer) {
         let answer;
 
         do {
@@ -66,16 +66,22 @@ class Metadata {
         try {
             const oldMetadata = JSON.parse(fs.readFileSync('./' + this.filename, 'utf8'));
             this.setAll(oldMetadata);
-        } catch (err) {
+        } catch (e) {
             console.log('No existing metadata file found for ' + this.filename);
         }
     }
     async askQuestions(questionHandler) {
         for (const key of this.keys) {
             const item = this.data[key];
-            await questionHandler(key, item.text, item.validator, item.parser)
-                .then((result) => this.set(key, result, true))
-                .catch((err) => {});
+
+            let required = true;
+            while (required) {
+                required = false;
+
+                await questionHandler(item.text, item.validator, item.parser)
+                    .then((result) => this.set(key, result, true))
+                    .catch((e) => required = item.required || false);
+            }
         }
     }
     format() {

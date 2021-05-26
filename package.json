@@ -1,6 +1,6 @@
 {
   "name": "mjedit",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "description": "cli mini json editor",
   "main": "mjedit.js",
   "scripts": {
