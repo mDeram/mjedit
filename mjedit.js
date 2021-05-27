@@ -10,12 +10,24 @@ module.exports = class Mjedit {
         this.metadata.load();
         await asyncReadlineQuestionHandler(async (questionHandler) => {
             await this.metadata.askQuestions(questionHandler)
-        });
+        })
         this.metadata.save();
     }
 }
 
+class MjeditError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "MjeditError";
+    }
+}
+
 async function asyncReadlineQuestionHandler(asyncCb) {
+    if (asyncReadlineQuestionHandler.open)
+        throw new MjeditError("Readline already open");
+
+    asyncReadlineQuestionHandler.open = true;
+
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
@@ -45,6 +57,8 @@ async function asyncReadlineQuestionHandler(asyncCb) {
     await asyncCb(questionHandler);
 
     rl.close();
+
+    asyncReadlineQuestionHandler.open = false;
 }
 
 class Metadata {
