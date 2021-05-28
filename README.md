@@ -3,29 +3,29 @@
 ```js
 const Mjedit = require('mjedit');
 const mjedit = new Mjedit(
-	filename,
-	{
-		propName: {
-			// Default value
-			value: Any,
-			
-			// Text printed to the user
-			text: String,
-			
-			// Text printed to the user when the validator function return false
-			invalidText: [String],
-			
-			// Return true is the value is valid, false otherwise
-			validator: [(value)],
-			
-			// Return a transformed value from the answer
-			parser: [(answer)],
-			
-			// Indicates if the input is required, default false
-			required: [Bool],
-			
-			// Text printed to the user when a required field was left empty
-			requiredText: [String]
+    filename,
+    {
+        propName: {
+            // Default value
+            value: Any,
+
+            // Text printed to the user
+            text: String,
+
+            // Text printed to the user when the validator function return false
+            invalidText: [String],
+
+            // Return true is the value is valid, false otherwise
+            validator: [(value)],
+
+            // Return a transformed value from the answer
+            parser: [(answer)],
+
+            // Indicates if the input is required, default false
+            required: [Bool],
+
+            // Text printed to the user when a required field was left empty
+            requiredText: [String]
 		}
 	}
 )
@@ -54,12 +54,12 @@ const mjedit = new Mjedit(
             text: 'Are ids valid? (true/false)',
             validator: (value) => ['true', 'false'].includes(value),
             required: true,
-			requiredText: 'You must specify if ids are valid'
+            requiredText: 'You must specify if ids are valid'
         },
         ids: {
             value: [],
             text: 'Enter ids (csv)',
-			invalidText: 'Invalid ids, each id should be 10 characteres long',
+            invalidText: 'Invalid ids, each id should be 10 characteres long',
             validator: (ids) => ids.every(id => id.length === 10),
             parser: (answer) => answer.split(',').map(id => id.trim())
         }
