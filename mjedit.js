@@ -8,8 +8,8 @@ module.exports = class Mjedit {
 
     async run() {
         this.metadata.load();
-        await asyncReadlineQuestionHandler(async (questionHandler) => {
-            await this.metadata.askQuestions(questionHandler)
+        await asyncReadlineQuestionHandler(async ({rl, questionHandler}) => {
+            await this.metadata.askQuestions(rl, questionHandler)
         })
         this.metadata.save();
     }
@@ -44,17 +44,26 @@ async function asyncReadlineQuestionHandler(asyncCb) {
         });
     }
 
-    async function questionHandler(text, validateCb, parseCb = (answer) => answer) {
+    async function questionHandler({
+        text,
+        invalidText,
+        validator = (value) => true,
+        parser = (answer) => answer
+    }) {
         let answer;
 
-        do {
-            answer = parseCb(await asyncQuestion(text + ': '));
-        } while (!validateCb(answer));
+        while (true) {
+            answer = parser(await asyncQuestion(text + ': '));
+            if (validator(answer))
+                break;
+            if (invalidText)
+                await rl.write(invalidText + '\n');
+        }
 
         return answer;
     }
 
-    await asyncCb(questionHandler);
+    await asyncCb({rl, questionHandler});
 
     rl.close();
 
@@ -63,7 +72,7 @@ async function asyncReadlineQuestionHandler(asyncCb) {
 
 class Metadata {
     constructor(filename, data) {
-        this.filename = filename.split('.')[0] + '.json';
+        this.filename = filename;
         this.data = data;
         this.keys = Object.keys(this.data);
     }
@@ -84,7 +93,7 @@ class Metadata {
             console.log('No existing metadata file found for ' + this.filename);
         }
     }
-    async askQuestions(questionHandler) {
+    async askQuestions(rl, questionHandler) {
         for (const key of this.keys) {
             const item = this.data[key];
 
@@ -92,9 +101,12 @@ class Metadata {
             while (required) {
                 required = false;
 
-                await questionHandler(item.text, item.validator, item.parser)
+                await questionHandler(item)
                     .then((result) => this.set(key, result, true))
                     .catch((e) => required = item.required || false);
+
+                if (required)
+                    await rl.write(item.requiredText + '\n');
             }
         }
     }
