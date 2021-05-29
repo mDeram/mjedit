@@ -4,7 +4,9 @@
   "description": "cli mini json editor",
   "main": "mjedit.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pretabsToSpaces": "mv README.md README.tmp",
+    "tabsToSpaces": "expand -t4 -i README.tmp > README.md",
+    "posttabsToSpaces": "rm README.tmp"
   },
   "keywords": [
     "cli",
