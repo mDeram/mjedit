@@ -7,10 +7,12 @@ module.exports = class Mjedit {
     }
 
     async run() {
+        //TODO use async load/save
         this.metadata.load();
-        await asyncReadlineQuestionHandler(async ({rl, questionHandler}) => {
-            await this.metadata.askQuestions(rl, questionHandler)
-        })
+        await new QuestionAsker().ask(
+            this.metadata.getUnsafeSetter(),
+            this.metadata.getQuestions()
+        );
         this.metadata.save();
     }
 }
@@ -22,29 +24,41 @@ class MjeditError extends Error {
     }
 }
 
-async function asyncReadlineQuestionHandler(asyncCb) {
-    if (asyncReadlineQuestionHandler.open)
-        throw new MjeditError("Readline already open");
-
-    asyncReadlineQuestionHandler.open = true;
-
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
-    function asyncQuestion(text) {
-        return new Promise((resolve, reject) => {
-            rl.question(text, answer => {
-                if (answer)
-                    resolve(answer);
-                else
-                    reject(answer);
-            });
-        });
+class QuestionAsker {
+    static rl = null;
+    async ask(unsafeSetter, questionData) {
+        await this.asyncReadline(() => this.askQuestions(unsafeSetter, questionData));
     }
+    async asyncReadline(cb) {
+        if (this.rl)
+            throw new MjeditError("Readline already open");
+        
+        this.rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
 
-    async function questionHandler({
+        await cb();
+
+        this.rl.close();
+        this.rl = null;
+    }
+    async askQuestions(unsafeSetter, questionData) {
+        for (const [key, item] of questionData) {
+            let required = true;
+            while (required) {
+                required = false;
+
+                await this.questionHandler(item)
+                    .then((result) => unsafeSetter(key, result))
+                    .catch((e) => required = item.required || false);
+
+                if (required && item.requiredText)
+                    await this.rl.write(item.requiredText + '\n');
+            }
+        }
+    }
+    async questionHandler({
         text,
         invalidText,
         validator = (value) => true,
@@ -53,21 +67,26 @@ async function asyncReadlineQuestionHandler(asyncCb) {
         let answer;
 
         while (true) {
-            answer = parser(await asyncQuestion(text + ': '));
+            answer = parser(await this.asyncQuestion(text + ': '));
+
             if (validator(answer))
                 break;
             if (invalidText)
-                await rl.write(invalidText + '\n');
+                await this.rl.write(invalidText + '\n');
         }
 
         return answer;
     }
-
-    await asyncCb({rl, questionHandler});
-
-    rl.close();
-
-    asyncReadlineQuestionHandler.open = false;
+    asyncQuestion(text) {
+        return new Promise((resolve, reject) => {
+            this.rl.question(text, answer => {
+                if (answer)
+                    resolve(answer);
+                else
+                    reject(answer);
+            });
+        });
+    }
 }
 
 class Metadata {
@@ -93,22 +112,14 @@ class Metadata {
             console.log('No existing metadata file found for ' + this.filename);
         }
     }
-    async askQuestions(rl, questionHandler) {
-        for (const key of this.keys) {
-            const item = this.data[key];
-
-            let required = true;
-            while (required) {
-                required = false;
-
-                await questionHandler(item)
-                    .then((result) => this.set(key, result, true))
-                    .catch((e) => required = item.required || false);
-
-                if (required)
-                    await rl.write(item.requiredText + '\n');
-            }
+    //Unsafe because we bypass the data validator
+    getUnsafeSetter() {
+        return (key, value) => {
+            this.set(key, value, true);
         }
+    }
+    getQuestions() {
+        return Object.entries(this.data);
     }
     format() {
         let formatedMetadata = {};
