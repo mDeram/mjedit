@@ -6,13 +6,13 @@ const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
 
 module.exports = class Mjedit {
-    //TODO otion to remove the log when metadata file non existant
-    constructor(filename, data) {
+    constructor(filename, data, { silent = false } = {} ) {
         this.metadata = new Metadata(filename, data);
+        this.silent = silent
     }
 
     async run() {
-        await this.metadata.load();
+        await this.metadata.load(this.silent);
         await new QuestionAsker().ask(
             this.metadata.getUnsafeSetter(),
             this.metadata.getQuestions()
@@ -29,23 +29,26 @@ class MjeditError extends Error {
 }
 
 class QuestionAsker {
+    // Using a static field to store the readline interface to make sure that
+    // only one instance is used at a time.
     static rl = null;
+
     async ask(unsafeSetter, questionData) {
         await this.readlineAsync(() => this.askQuestions(unsafeSetter, questionData));
     }
     async readlineAsync(cb) {
-        if (this.rl)
+        if (QuestionAsker.rl)
             throw new MjeditError("Readline already open");
         
-        this.rl = readline.createInterface({
+        QuestionAsker.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout
         });
 
         await cb();
 
-        this.rl.close();
-        this.rl = null;
+        QuestionAsker.rl.close();
+        QuestionAsker.rl = null;
     }
     async askQuestions(unsafeSetter, questionData) {
         for (const [key, item] of questionData) {
@@ -58,7 +61,7 @@ class QuestionAsker {
                     .catch((e) => required = item.required || false);
 
                 if (required && item.requiredText)
-                    await this.rl.write(item.requiredText + '\n');
+                    await QuestionAsker.rl.write(item.requiredText + '\n');
             }
         }
     }
@@ -76,14 +79,14 @@ class QuestionAsker {
             if (validator(answer))
                 break;
             if (invalidText)
-                await this.rl.write(invalidText + '\n');
+                await QuestionAsker.rl.write(invalidText + '\n');
         }
 
         return answer;
     }
     questionAsync(text) {
         return new Promise((resolve, reject) => {
-            this.rl.question(text, answer => {
+            QuestionAsker.rl.question(text, answer => {
                 if (answer)
                     resolve(answer);
                 else
@@ -108,10 +111,13 @@ class Metadata {
         this.keys.forEach((key) => this.set(key, data[key]));
     }
 
-    async load() {
+    async load(silent) {
         await readFileAsync(this.filename, 'utf8')
             .then(data => this.setAll(JSON.parse(data)))
-            .catch(err => console.log('No existing metadata file found for ' + this.filename));
+            .catch(err => {
+                if (!silent)
+                    console.log('No existing metadata file found for ' + this.filename)
+            });
     }
     //Unsafe because we bypass the data validator
     getUnsafeSetter() {

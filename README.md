@@ -27,6 +27,10 @@ const mjedit = new Mjedit(
             // Text printed to the user when a required field was left empty
             requiredText: [String]
         }
+    },
+    {
+        // Will not warn you if the file "filename" is not found, default false
+        silent = [true]
     }
 )
 ```
@@ -39,7 +43,7 @@ const mjedit = new Mjedit(
 // Load the file (filename) as json if it exist
 // Ask the questions to the user through stdin
 // Save resulting data to the file as json
-mjedit.run();
+mjedit.run(); // async function
 ```
 
 ## Example
@@ -69,19 +73,21 @@ const mjedit = new Mjedit(
 mjedit.run();
 ```
 
-```sh
-$ node app.js
-Are ids valid? (true/false): true
-Enter ids (csv): 1234567890, 12345
-Invalid ids, each id should be 10 characteres long
-Enter ids (csv): 1234567890, 1234554321
-$ cat hello_mjedit.json 
-{"idValid":"true","ids":["1234567890","1234554321"]}
-$ node app.js
-Are ids valid? (true/false):
-You must specify if ids are valid
-Are ids valid? (true/false): true
-Enter ids (csv): 1111111111
-$ cat hello_mjedit.json 
-{"idValid":"true","ids":["1111111111"]}
-```
+    $ node app.js
+    No existing metadata file found for hello_mjedit.json
+    Are ids valid? (true/false): true
+    Enter ids (csv): 1234567890, 12345
+    Invalid ids, each id should be 10 characteres long
+    Enter ids (csv): 1234567890, 1234554321
+
+    $ cat hello_mjedit.json
+    {"idValid":"true","ids":["1234567890","1234554321"]}
+
+    $ node app.js
+    Are ids valid? (true/false):
+    You must specify if ids are valid
+    Are ids valid? (true/false): true
+    Enter ids (csv): 1111111111
+
+    $ cat hello_mjedit.json
+    {"idValid":"true","ids":["1111111111"]}
