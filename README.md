@@ -8,22 +8,22 @@ const mjedit = new Mjedit(
         propName: {
             // Default value
             value: Any,
-            
+
             // Text printed to the user
             text: String,
-            
+
             // Text printed to the user when the validator function return false
             invalidText: [String],
-            
+
             // Return true is the value is valid, false otherwise
             validator: [(value)],
-            
+
             // Return a transformed value from the answer
             parser: [(answer)],
-            
+
             // Indicates if the input is required, default false
             required: [Bool],
-            
+
             // Text printed to the user when a required field was left empty
             requiredText: [String]
         }

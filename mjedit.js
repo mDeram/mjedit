@@ -1,9 +1,5 @@
-const util = require('util');
-const fs = require('fs');
-const readline = require('readline');
-
-const readFileAsync = util.promisify(fs.readFile);
-const writeFileAsync = util.promisify(fs.writeFile);
+const { readFile, writeFile } = require('fs/promises');
+const { createInterface } = require('readline');
 
 module.exports = class Mjedit {
     constructor(filename, data, { silent = false } = {} ) {
@@ -39,8 +35,8 @@ class QuestionAsker {
     async readlineAsync(cb) {
         if (QuestionAsker.rl)
             throw new MjeditError("Readline already open");
-        
-        QuestionAsker.rl = readline.createInterface({
+
+        QuestionAsker.rl = createInterface({
             input: process.stdin,
             output: process.stdout
         });
@@ -57,8 +53,8 @@ class QuestionAsker {
                 required = false;
 
                 await this.questionHandler(item)
-                    .then((result) => unsafeSetter(key, result))
-                    .catch((e) => required = item.required || false);
+                    .then(result => unsafeSetter(key, result))
+                    .catch(_ => required = item.required || false);
 
                 if (required && item.requiredText)
                     await QuestionAsker.rl.write(item.requiredText + '\n');
@@ -68,7 +64,7 @@ class QuestionAsker {
     async questionHandler({
         text,
         invalidText,
-        validator = (value) => true,
+        validator = (_) => true,
         parser = (answer) => answer
     }) {
         let answer;
@@ -112,11 +108,11 @@ class Metadata {
     }
 
     async load(silent) {
-        await readFileAsync(this.filename, 'utf8')
+        await readFile(this.filename, 'utf8')
             .then(data => this.setAll(JSON.parse(data)))
-            .catch(err => {
+            .catch(_ => {
                 if (!silent)
-                    console.log('No existing metadata file found for ' + this.filename)
+                    console.error('No existing metadata file found for ' + this.filename)
             });
     }
     //Unsafe because we bypass the data validator
@@ -134,8 +130,7 @@ class Metadata {
         return formatedMetadata;
     }
     async save() {
-        fs.writeFileSync(this.filename, JSON.stringify(this.format()), 'utf8');
-        await writeFileAsync(this.filename, JSON.stringify(this.format()), 'utf8')
-            .catch(err => console.log(`Error when trying to write into ${this.filename} : ${err}`));
+        await writeFile(this.filename, JSON.stringify(this.format()), 'utf8')
+            .catch(err => console.error(`Error when trying to write into ${this.filename} : ${err}`));
     }
 }
